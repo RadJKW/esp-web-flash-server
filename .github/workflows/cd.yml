@@ -78,7 +78,7 @@ jobs:
         run: Compress-Archive target/${{ matrix.job.target }}/release/web-flash${{ matrix.job.binary-postfix }} web-flash-${{ matrix.job.target }}.zip
 
       - name: Upload archives
-        uses: svenstaro/upload-release-action@v2.4.0
+        uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: web-flash-${{ matrix.job.target }}.zip
