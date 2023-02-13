@@ -69,15 +69,16 @@ jobs:
       - name: Build project
         run: cargo build --release --all --target ${{ matrix.job.target }}
 
-      - name: Zip archives
-        uses: papeloto/action-zip@v1
-        with:
-          files: target/${{ matrix.job.target }}/release/web-flash${{ matrix.job.extension }}
-          recursive: true
-          dest: web-flash-${{ matrix.job.target }}.zip
+      - name: Compress (Unix)
+        if: ${{ matrix.job.os != 'windows-latest' }}
+        run: zip -j web-flash-${{ matrix.job.target }}.zip target/${{ matrix.job.target }}/release/web-flash${{ matrix.job.binary-postfix }}
+
+      - name: Compress (Windows)
+        if: ${{ matrix.job.os == 'windows-latest' }}
+        run: Compress-Archive target/${{ matrix.job.target }}/release/web-flash${{ matrix.job.binary-postfix }} web-flash-${{ matrix.job.target }}.zip
 
       - name: Upload archives
-        uses: svenstaro/upload-release-action@v2
+        uses: svenstaro/upload-release-action@v2.4.0
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: web-flash-${{ matrix.job.target }}.zip
