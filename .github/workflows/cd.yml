@@ -1,0 +1,73 @@
+name: Release
+
+on:
+  release:
+    types: [created]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Generating artifacts for ${{ matrix.job.target }}
+    runs-on: ${{ matrix.job.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+          - os: ubuntu-20.04
+            target: x86_64-unknown-linux-gnu
+          - os: ubuntu-20.04
+            target: x86_64-unknown-linux-musl
+          - os: ubuntu-20.04
+            target: aarch64-unknown-linux-gnu
+            cross: true
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            extension: .exe
+          - os: windows-latest
+            target: x86_64-pc-windows-gnu
+            extension: .exe
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: macos-latest
+            target: x86_64-apple-darwin
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          target: ${{ matrix.job.target }}
+          override: true
+
+      - name: Install dependencies
+        if: matrix.job.os == 'ubuntu-20.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install libudev-dev librust-libudev-sys-dev
+
+      - name: Build project
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          use-cross: ${{ matrix.job.cross }}
+          args: --release --all --target ${{ matrix.job.target }}
+
+      - name: Zip archives
+        uses: papeloto/action-zip@v1
+        with:
+          files: target/${{ matrix.job.target }}/release/web-flash${{ matrix.job.extension }}
+          recursive: true
+          dest: web-flash-${{ matrix.job.target }}.zip
+
+      - name: Upload archives
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: web-flash-${{ matrix.job.target }}.zip
+          tag: ${{ github.ref }}
